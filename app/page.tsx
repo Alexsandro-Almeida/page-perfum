@@ -24,14 +24,34 @@ function WhatsAppButton({ label = "Descobrir minha fragrância", light = false }
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
+  const [turning, setTurning] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const turnToSection = (event: React.MouseEvent<HTMLElement>) => {
+    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
+    if (!link || turning) return;
+    const target = document.querySelector(link.getAttribute("href") || "");
+    if (!target) return;
+    event.preventDefault();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      target.scrollIntoView();
+      return;
+    }
+    setTurning(true);
+    window.setTimeout(() => target.scrollIntoView({ behavior: "auto" }), 430);
+    window.setTimeout(() => setTurning(false), 1050);
+  };
+
   return (
-    <main>
+    <main onClick={turnToSection}>
+      <div className={`page-turn ${turning ? "is-turning" : ""}`} aria-hidden="true">
+        <div className="page-turn-sheet"><span>MAISON ÉLANCE</span></div>
+        <div className="page-turn-shadow" />
+      </div>
       <nav className={scrolled ? "nav scrolled" : "nav"} aria-label="Navegação principal">
         <a className="brand" href="#inicio" aria-label="Maison Élance — início">MAISON <i>ÉLANCE</i></a>
         <div className="nav-links"><a href="#colecao">Coleção</a><a href="#ritual">O ritual</a><a href="#faq">Dúvidas</a></div>
