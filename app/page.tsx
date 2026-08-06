@@ -24,34 +24,41 @@ function WhatsAppButton({ label = "Descobrir minha fragrância", light = false }
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
-  const [turning, setTurning] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const turnToSection = (event: React.MouseEvent<HTMLElement>) => {
-    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
-    if (!link || turning) return;
-    const target = document.querySelector(link.getAttribute("href") || "");
-    if (!target) return;
-    event.preventDefault();
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      target.scrollIntoView();
-      return;
-    }
-    setTurning(true);
-    window.setTimeout(() => target.scrollIntoView({ behavior: "auto" }), 430);
-    window.setTimeout(() => setTurning(false), 1050);
-  };
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const pages = Array.from(document.querySelectorAll<HTMLElement>("main > section"));
+    pages.forEach(page => page.classList.add("book-page"));
+    let frame = 0;
+    const render = () => {
+      frame = 0;
+      const viewport = window.innerHeight;
+      pages.forEach(page => {
+        const rect = page.getBoundingClientRect();
+        const exit = Math.max(0, Math.min(1, -rect.top / Math.min(viewport * .72, rect.height * .5)));
+        const entry = Math.max(0, Math.min(1, (viewport - rect.top) / (viewport * .72)));
+        page.style.setProperty("--page-exit", exit.toFixed(3));
+        page.style.setProperty("--page-entry", entry.toFixed(3));
+      });
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(render); };
+    render();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   return (
-    <main onClick={turnToSection}>
-      <div className={`page-turn ${turning ? "is-turning" : ""}`} aria-hidden="true">
-        <div className="page-turn-sheet"><span>MAISON ÉLANCE</span></div>
-        <div className="page-turn-shadow" />
-      </div>
+    <main>
       <nav className={scrolled ? "nav scrolled" : "nav"} aria-label="Navegação principal">
         <a className="brand" href="#inicio" aria-label="Maison Élance — início">MAISON <i>ÉLANCE</i></a>
         <div className="nav-links"><a href="#colecao">Coleção</a><a href="#ritual">O ritual</a><a href="#faq">Dúvidas</a></div>
